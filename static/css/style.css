@@ -1,0 +1,283 @@
+/* Custom Styles for Football Auction System */
+
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --dark-color: #212529;
+    --light-color: #f8f9fa;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Countdown Styles */
+.countdown-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    margin-bottom: 2rem;
+}
+
+.countdown-card .card-title {
+    color: white;
+    font-weight: bold;
+}
+
+.countdown-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.countdown-item {
+    text-align: center;
+    min-width: 100px;
+}
+
+.countdown-value {
+    font-size: 3rem;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.countdown-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+.countdown-separator {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0 0.5rem;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    border: none;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+}
+
+#teamsCard:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+#teamsCard:hover .dashboard-icon i,
+#teamsCard:hover .card-text {
+    color: white !important;
+}
+
+.dashboard-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+}
+
+.dashboard-card .card-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Team Cards */
+.team-card {
+    border: none;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: white;
+    border-left: 4px solid var(--primary-color);
+}
+
+.team-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    border-left-color: var(--success-color);
+}
+
+.team-header {
+    border-bottom: 2px solid var(--light-color);
+    padding-bottom: 1rem;
+}
+
+.team-info {
+    color: var(--secondary-color);
+}
+
+.team-info strong {
+    color: var(--dark-color);
+}
+
+/* Login Cards */
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card.shadow-lg {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-lg {
+    padding: 0.75rem 2rem;
+}
+
+/* Forms */
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Tables */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead {
+    background: var(--primary-color);
+    color: white;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: var(--light-color);
+    transform: scale(1.01);
+}
+
+/* Badges */
+.badge {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .countdown-value {
+        font-size: 2rem;
+    }
+    
+    .countdown-item {
+        min-width: 70px;
+    }
+    
+    .countdown-separator {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-card .card-title {
+        font-size: 2rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Smooth Scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Container adjustments */
+.container {
+    max-width: 1200px;
+}
+
+/* Team Logo Styles */
+.team-logo {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.team-logo:hover {
+    transform: scale(1.05);
+}
+
+.team-logo-placeholder {
+    border: 2px dashed #ddd;
+    transition: all 0.3s ease;
+}
+
+.team-logo-placeholder:hover {
+    border-color: var(--primary-color);
+    background: #f8f9fa;
+}
+

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Players - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5">
+            <i class="bi bi-upload"></i> Bulk Upload Players
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-spreadsheet"></i> Upload Excel File & Photos</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('bulk_upload_players') }}" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="excel_file" class="form-label">
+                            <i class="bi bi-file-excel"></i> Excel File <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" 
+                               accept=".xlsx,.xls" required>
+                        <small class="form-text text-muted">
+                            Upload an Excel file (.xlsx or .xls) with player data
+                        </small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="photos_zip" class="form-label">
+                            <i class="bi bi-file-zip"></i> Photos Folder (ZIP File)
+                        </label>
+                        <input type="file" class="form-control" id="photos_zip" name="photos_zip" 
+                               accept=".zip">
+                        <small class="form-text text-muted">
+                            Upload a ZIP file containing all player photos
+                        </small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="photos_folder" class="form-label">
+                            <i class="bi bi-images"></i> Photos (Multiple Files)
+                        </label>
+                        <input type="file" class="form-control" id="photos_folder" name="photos_folder" 
+                               accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" multiple>
+                        <small class="form-text text-muted">
+                            Or upload multiple photo files directly (hold Ctrl/Cmd to select multiple)
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Excel File Format:</h6>
+                        <p class="mb-1">Your Excel file must have the following columns:</p>
+                        <ul class="mb-0">
+                            <li><strong>player_name</strong> (required) - Player's full name</li>
+                            <li><strong>batch</strong> (required) - Batch (e.g., CSE 1, CSE 2, etc.)</li>
+                            <li><strong>position</strong> (required) - Player position (e.g., Striker (ST))</li>
+                            <li><strong>base_price</strong> (optional) - Base price in Taka (default: 0.00)</li>
+                            <li><strong>photo_name</strong> (optional) - Photo filename (e.g., messi.jpg, ronaldo.png)</li>
+                        </ul>
+                        <p class="mt-2 mb-0"><small><strong>Note:</strong> The photo_name in Excel should match the filename in your photo folder. Matching is case-insensitive.</small></p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload Players
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-question-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <h6>Step 1: Prepare Excel File</h6>
+                <p class="small">Create an Excel file with columns: player_name, batch, position, base_price, photo_name</p>
+                
+                <h6>Step 2: Prepare Photos</h6>
+                <p class="small">Put all photos in a folder and zip it, or upload multiple files</p>
+                
+                <h6>Step 3: Match Photos</h6>
+                <p class="small">The photo_name in Excel should match the filename in your photo folder. The system will match photos by:
+                    <ul class="small">
+                        <li>Exact filename (case-insensitive)</li>
+                        <li>Filename without extension</li>
+                        <li>Partial match if exact not found</li>
+                    </ul>
+                </p>
+                
+                <h6>Step 4: Upload</h6>
+                <p class="small">Upload Excel file and photos, then click "Upload Players"</p>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-spreadsheet"></i> Example Excel Format</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>player_name</th>
+                                <th>batch</th>
+                                <th>position</th>
+                                <th>base_price</th>
+                                <th>photo_name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Messi</td>
+                                <td>CSE 1</td>
+                                <td>Striker (ST)</td>
+                                <td>50000</td>
+                                <td>messi.jpg</td>
+                            </tr>
+                            <tr>
+                                <td>Ronaldo</td>
+                                <td>CSE 2</td>
+                                <td>Striker (ST)</td>
+                                <td>55000</td>
+                                <td>ronaldo.png</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

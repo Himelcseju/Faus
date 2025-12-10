@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Football Auction{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4 text-center mb-4">
+            <i class="bi bi-trophy-fill text-warning"></i> Football Auction System
+        </h1>
+        <p class="lead text-center text-muted">Welcome to the professional football auction platform</p>
+    </div>
+</div>
+
+<!-- Auction Countdown -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card countdown-card shadow-lg">
+            <div class="card-body text-center">
+                <h2 class="card-title mb-2" style="font-size: 1.8rem; font-weight: bold;">
+                    Saturday, December 14, 2025
+                </h2>
+                <h3 class="card-title mb-4" style="font-size: 1.2rem; opacity: 0.9;">
+                    <i class="bi bi-clock-history"></i> Auction Countdown
+                </h3>
+                <div id="countdown" class="countdown-display">
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="days">00</div>
+                        <div class="countdown-label">Days</div>
+                    </div>
+                    <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="hours">00</div>
+                        <div class="countdown-label">Hours</div>
+                    </div>
+                    <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="minutes">00</div>
+                        <div class="countdown-label">Minutes</div>
+                    </div>
+                    <div class="countdown-separator">:</div>
+                    <div class="countdown-item">
+                        <div class="countdown-value" id="seconds">00</div>
+                        <div class="countdown-label">Seconds</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Card -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card dashboard-card shadow-sm h-100" id="teamsCard" style="cursor: pointer;">
+            <div class="card-body text-center">
+                <div class="dashboard-icon mb-3">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <h2 class="card-title mb-2">{{ team_count }}</h2>
+                <p class="card-text text-muted">Total Teams</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-card shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="dashboard-icon mb-3">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                </div>
+                <h2 class="card-title mb-2">{{ slot_info.total_slots }}</h2>
+                <p class="card-text text-muted">Total Slots</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-card shadow-sm h-100" id="playersCard" style="cursor: pointer;">
+            <div class="card-body text-center">
+                <div class="dashboard-icon mb-3">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                <h2 class="card-title mb-2">{{ player_count }}</h2>
+                <p class="card-text text-muted">Total Registered Players</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teams Display Section -->
+<div class="row" id="teamsSection" style="display: none;">
+    <div class="col-12">
+        <h3 class="mb-4">
+            <i class="bi bi-list-ul"></i> All Teams
+        </h3>
+        <div class="row" id="teamsContainer">
+            {% for team in teams %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card team-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="team-header mb-3 text-center">
+                            {% if team.logo_filename %}
+                            <img src="{{ url_for('static', filename='uploads/team_logos/' + team.logo_filename) }}" 
+                                 alt="{{ team.name }} Logo" class="team-logo mb-2" style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                            {% else %}
+                            <div class="team-logo-placeholder mb-2" style="width: 100px; height: 100px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <i class="bi bi-image" style="font-size: 2rem; color: #ccc;"></i>
+                            </div>
+                            {% endif %}
+                            <h5 class="card-title">
+                                <i class="bi bi-shield-check"></i> {{ team.name }}
+                            </h5>
+                        </div>
+                        <div class="team-info">
+                            <p class="mb-2">
+                                <i class="bi bi-person-badge"></i> 
+                                <strong>Owner:</strong> {{ team.owner }}
+                            </p>
+                            {% if team.coowner_name %}
+                            <p class="mb-2">
+                                <i class="bi bi-people"></i> 
+                                <strong>Co-Owner:</strong> {{ team.coowner_name }}
+                            </p>
+                            {% endif %}
+                            <p class="mb-2">
+                                <i class="bi bi-tag"></i> 
+                                <strong>Batch:</strong> 
+                                <span class="badge bg-primary">{{ team.batch }}</span>
+                            </p>
+                            <p class="mb-2">
+                                <i class="bi bi-currency-dollar"></i> 
+                                <strong>Price:</strong> 
+                                <span class="text-success">৳{{ "%.2f"|format(team.price) }}</span>
+                            </p>
+                            <p class="mb-0">
+                                <i class="bi bi-people"></i> 
+                                <strong>Members:</strong> 
+                                <span class="badge bg-info">{{ team.number_of_members or 12 }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Players Display Section -->
+<div class="row" id="playersSection" style="display: none;">
+    <div class="col-12">
+        <h3 class="mb-4">
+            <i class="bi bi-person-badge"></i> All Registered Players
+        </h3>
+        
+        <!-- Search and Filter Section -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="searchBatch" class="form-label">
+                            <i class="bi bi-funnel"></i> Filter by Batch
+                        </label>
+                        <select class="form-select" id="searchBatch">
+                            <option value="">All Batches</option>
+                            {% for i in range(1, 33) %}
+                            <option value="CSE {{ i }}">CSE {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="searchPosition" class="form-label">
+                            <i class="bi bi-funnel"></i> Filter by Position
+                        </label>
+                        <select class="form-select" id="searchPosition">
+                            <option value="">All Positions</option>
+                            <option value="Goalkeeper (GK)">Goalkeeper (GK)</option>
+                            <option value="Right Back (RB)">Right Back (RB)</option>
+                            <option value="Left Back (LB)">Left Back (LB)</option>
+                            <option value="Center Back (CB)">Center Back (CB)</option>
+                            <option value="Defensive Midfielder (CDM)">Defensive Midfielder (CDM)</option>
+                            <option value="Right Midfielder (RM)">Right Midfielder (RM)</option>
+                            <option value="Left Midfielder (LM)">Left Midfielder (LM)</option>
+                            <option value="Central Midfielder (CM)">Central Midfielder (CM)</option>
+                            <option value="Attacking Midfielder (CAM)">Attacking Midfielder (CAM)</option>
+                            <option value="Right Winger (RW)">Right Winger (RW)</option>
+                            <option value="Left Winger (LW)">Left Winger (LW)</option>
+                            <option value="Striker (ST)">Striker (ST)</option>
+                            <option value="Center Forward (CF)">Center Forward (CF)</option>
+                            <option value="Second Striker (SS)">Second Striker (SS)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sortPrice" class="form-label">
+                            <i class="bi bi-sort-down"></i> Sort by Price
+                        </label>
+                        <select class="form-select" id="sortPrice">
+                            <option value="">Default</option>
+                            <option value="asc">Price: Low to High</option>
+                            <option value="desc">Price: High to Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-secondary w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Players Table -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="playersTable">
+                        <thead>
+                            <tr>
+                                <th>Photo</th>
+                                <th>Player Name</th>
+                                <th>Batch</th>
+                                <th>Position</th>
+                                <th>Base Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playersTableBody">
+                            {% for player in players %}
+                            <tr class="player-row" 
+                                data-batch="{{ player.batch }}" 
+                                data-position="{{ player.position }}"
+                                data-price="{{ player.base_price }}">
+                                <td>
+                                    {% if player.photo_filename %}
+                                    <img src="{{ url_for('static', filename='uploads/player_photos/' + player.photo_filename) }}" 
+                                         alt="{{ player.name }} Photo" 
+                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                    {% else %}
+                                    <div style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ player.name }}</strong></td>
+                                <td><span class="badge bg-primary">{{ player.batch }}</span></td>
+                                <td><span class="badge bg-success">{{ player.position }}</span></td>
+                                <td>৳{{ "%.2f"|format(player.base_price) }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not players %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="bi bi-inbox"></i> No players registered yet.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Countdown Timer
+    function updateCountdown() {
+        fetch('/api/countdown')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('countdown').innerHTML = '<p class="text-muted">No auction time set</p>';
+                    return;
+                }
+                
+                document.getElementById('days').textContent = String(data.days).padStart(2, '0');
+                document.getElementById('hours').textContent = String(data.hours).padStart(2, '0');
+                document.getElementById('minutes').textContent = String(data.minutes).padStart(2, '0');
+                document.getElementById('seconds').textContent = String(data.seconds).padStart(2, '0');
+            })
+            .catch(error => {
+                console.error('Error fetching countdown:', error);
+            });
+    }
+
+    // Update countdown every second
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // Teams Card Click Handler
+    document.getElementById('teamsCard').addEventListener('click', function() {
+        const teamsSection = document.getElementById('teamsSection');
+        const playersSection = document.getElementById('playersSection');
+        if (teamsSection.style.display === 'none') {
+            teamsSection.style.display = 'block';
+            playersSection.style.display = 'none';
+            teamsSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            teamsSection.style.display = 'none';
+        }
+    });
+    
+    // Filter and Search Functionality
+    function filterPlayers() {
+        const batchFilter = document.getElementById('searchBatch').value;
+        const positionFilter = document.getElementById('searchPosition').value;
+        const sortOrder = document.getElementById('sortPrice').value;
+        const rows = document.querySelectorAll('.player-row');
+        let visibleRows = [];
+        
+        // Filter rows
+        rows.forEach(row => {
+            const batch = row.getAttribute('data-batch');
+            const position = row.getAttribute('data-position');
+            const price = parseFloat(row.getAttribute('data-price'));
+            
+            let show = true;
+            
+            if (batchFilter && batch !== batchFilter) {
+                show = false;
+            }
+            
+            if (positionFilter && position !== positionFilter) {
+                show = false;
+            }
+            
+            if (show) {
+                row.style.display = '';
+                visibleRows.push({ row: row, price: price });
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Sort rows
+        if (sortOrder) {
+            visibleRows.sort((a, b) => {
+                if (sortOrder === 'asc') {
+                    return a.price - b.price;
+                } else {
+                    return b.price - a.price;
+                }
+            });
+            
+            const tbody = document.getElementById('playersTableBody');
+            visibleRows.forEach(item => {
+                tbody.appendChild(item.row);
+            });
+        }
+        
+        // Show message if no results
+        const visibleCount = visibleRows.length;
+        let noResultsRow = document.getElementById('noResultsRow');
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!noResultsRow) {
+                noResultsRow = document.createElement('tr');
+                noResultsRow.id = 'noResultsRow';
+                noResultsRow.innerHTML = '<td colspan="5" class="text-center text-muted"><i class="bi bi-search"></i> No players found matching your filters.</td>';
+                document.getElementById('playersTableBody').appendChild(noResultsRow);
+            }
+            noResultsRow.style.display = '';
+        } else if (noResultsRow) {
+            noResultsRow.style.display = 'none';
+        }
+    }
+    
+    function resetFilters() {
+        document.getElementById('searchBatch').value = '';
+        document.getElementById('searchPosition').value = '';
+        document.getElementById('sortPrice').value = '';
+        
+        // Reset all rows to visible
+        const rows = document.querySelectorAll('.player-row');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        
+        // Reset table order to original
+        const tbody = document.getElementById('playersTableBody');
+        const allRows = Array.from(rows);
+        allRows.forEach(row => tbody.appendChild(row));
+        
+        // Hide no results message
+        const noResultsRow = document.getElementById('noResultsRow');
+        if (noResultsRow) {
+            noResultsRow.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners when players section is shown
+    document.getElementById('playersCard').addEventListener('click', function() {
+        const playersSection = document.getElementById('playersSection');
+        const teamsSection = document.getElementById('teamsSection');
+        if (playersSection.style.display === 'none') {
+            playersSection.style.display = 'block';
+            teamsSection.style.display = 'none';
+            playersSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Add event listeners if not already added
+            const searchBatch = document.getElementById('searchBatch');
+            const searchPosition = document.getElementById('searchPosition');
+            const sortPrice = document.getElementById('sortPrice');
+            
+            if (searchBatch && !searchBatch.hasAttribute('data-listener')) {
+                searchBatch.setAttribute('data-listener', 'true');
+                searchBatch.addEventListener('change', filterPlayers);
+            }
+            if (searchPosition && !searchPosition.hasAttribute('data-listener')) {
+                searchPosition.setAttribute('data-listener', 'true');
+                searchPosition.addEventListener('change', filterPlayers);
+            }
+            if (sortPrice && !sortPrice.hasAttribute('data-listener')) {
+                sortPrice.setAttribute('data-listener', 'true');
+                sortPrice.addEventListener('change', filterPlayers);
+            }
+        } else {
+            playersSection.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}
+

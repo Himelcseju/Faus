@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Add Team - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5">
+            <i class="bi bi-plus-circle"></i> Add New Team
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-person-plus"></i> Team Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_team') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="bi bi-shield-check"></i> Team Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="Enter team name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="owner" class="form-label">
+                            <i class="bi bi-person-badge"></i> Owner Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="owner" name="owner" required 
+                               placeholder="Enter owner name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="coowner_name" class="form-label">
+                            <i class="bi bi-people"></i> Co-Owner Name
+                        </label>
+                        <input type="text" class="form-control" id="coowner_name" name="coowner_name" 
+                               placeholder="Enter co-owner name (optional)">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="batch" class="form-label">
+                            <i class="bi bi-tag"></i> Batch <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="batch" name="batch" required>
+                            <option value="">Select Batch</option>
+                            {% for i in range(1, 33) %}
+                            <option value="CSE {{ i }}">CSE {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">
+                            <i class="bi bi-currency-dollar"></i> Price (Taka)
+                        </label>
+                        <input type="number" class="form-control" id="price" name="price" 
+                               step="0.01" min="0" value="0.00" placeholder="0.00">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="number_of_members" class="form-label">
+                            <i class="bi bi-people"></i> Number of Members
+                        </label>
+                        <input type="number" class="form-control" id="number_of_members" name="number_of_members" 
+                               min="1" value="12" placeholder="12">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logo" class="form-label">
+                            <i class="bi bi-image"></i> Team Logo
+                        </label>
+                        <input type="file" class="form-control" id="logo" name="logo" 
+                               accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml">
+                        <small class="form-text text-muted">Max size: 5MB. Formats: PNG, JPG, JPEG, GIF, WEBP, SVG</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Add Team
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success"></i> 
+                        <strong>Required fields</strong> are marked with <span class="text-danger">*</span>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-shield-check text-primary"></i> 
+                        Team name must be unique
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-currency-dollar text-warning"></i> 
+                        Price is optional (default: 0.00)
+                    </li>
+                    <li>
+                        <i class="bi bi-people text-info"></i> 
+                        Co-owner name is optional
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

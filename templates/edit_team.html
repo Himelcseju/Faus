@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Team - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5">
+            <i class="bi bi-pencil-square"></i> Edit Team
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-gear"></i> Update Team Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('edit_team', team_id=team.id) }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="bi bi-shield-check"></i> Team Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               value="{{ team.name }}" placeholder="Enter team name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="owner" class="form-label">
+                            <i class="bi bi-person-badge"></i> Owner Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="owner" name="owner" required 
+                               value="{{ team.owner }}" placeholder="Enter owner name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="coowner_name" class="form-label">
+                            <i class="bi bi-people"></i> Co-Owner Name
+                        </label>
+                        <input type="text" class="form-control" id="coowner_name" name="coowner_name" 
+                               value="{{ team.coowner_name or '' }}" placeholder="Enter co-owner name (optional)">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="batch" class="form-label">
+                            <i class="bi bi-tag"></i> Batch <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="batch" name="batch" required>
+                            <option value="">Select Batch</option>
+                            {% for i in range(1, 33) %}
+                            {% set cse_batch = 'CSE ' + i|string %}
+                            <option value="CSE {{ i }}" {% if team.batch == cse_batch %}selected{% endif %}>CSE {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">
+                            <i class="bi bi-currency-dollar"></i> Price (Taka)
+                        </label>
+                        <input type="number" class="form-control" id="price" name="price" 
+                               step="0.01" min="0" value="{{ team.price }}" placeholder="0.00">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="number_of_members" class="form-label">
+                            <i class="bi bi-people"></i> Number of Members
+                        </label>
+                        <input type="number" class="form-control" id="number_of_members" name="number_of_members" 
+                               min="1" value="{{ team.number_of_members or 12 }}" placeholder="12">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logo" class="form-label">
+                            <i class="bi bi-image"></i> Team Logo
+                        </label>
+                        {% if team.logo_filename %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename='uploads/team_logos/' + team.logo_filename) }}" 
+                                 alt="{{ team.name }} Logo" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                            <br>
+                            <small class="text-muted">Current logo</small>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="delete_logo" name="delete_logo" value="true">
+                            <label class="form-check-label" for="delete_logo">
+                                Delete current logo
+                            </label>
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="logo" name="logo" 
+                               accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml">
+                        <small class="form-text text-muted">Max size: 5MB. Formats: PNG, JPG, JPEG, GIF, WEBP, SVG. Leave empty to keep current logo.</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Update Team
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Team Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Current Team:</strong><br>{{ team.name }}</p>
+                <p><strong>Owner:</strong><br>{{ team.owner }}</p>
+                {% if team.coowner_name %}
+                <p><strong>Co-Owner:</strong><br>{{ team.coowner_name }}</p>
+                {% endif %}
+                <p><strong>Batch:</strong><br><span class="badge bg-primary">{{ team.batch }}</span></p>
+                <p><strong>Price:</strong><br>${{ "%.2f"|format(team.price) }}</p>
+                <hr>
+                <small class="text-muted">
+                    <i class="bi bi-calendar"></i> Created: {{ team.created_at.strftime('%Y-%m-%d') }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
