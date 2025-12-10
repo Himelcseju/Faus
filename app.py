@@ -11,7 +11,12 @@ from openpyxl import load_workbook
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///football_auction.db'
+# Database configuration - use environment variable for production, sqlite for local
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///football_auction.db')
+# Render uses postgres:// but SQLAlchemy needs postgresql://
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/team_logos'
 app.config['PLAYER_PHOTO_FOLDER'] = 'static/uploads/player_photos'

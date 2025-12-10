@@ -16,8 +16,10 @@ instance/
 *.sqlite3
 
 # Uploads (optional - remove if you want to track uploads)
+# Note: For production, you may want to use cloud storage instead
 static/uploads/
 static/temp_photos/
+!static/uploads/.gitkeep
 
 # IDE
 .vscode/
