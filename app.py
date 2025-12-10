@@ -10,7 +10,7 @@ import shutil
 from openpyxl import load_workbook
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 # Database configuration - use environment variable for production, sqlite for local
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///football_auction.db')
 # Render uses postgres:// but SQLAlchemy needs postgresql://
@@ -866,5 +866,7 @@ if __name__ == '__main__':
         
         db.session.commit()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Only run with Flask dev server if not in production
+    if os.environ.get('FLASK_ENV') != 'production':
+        app.run(debug=True, host='0.0.0.0', port=5000)
 
