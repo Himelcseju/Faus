@@ -269,7 +269,7 @@ def admin_dashboard():
     auction_setting = AuctionSetting.query.first()
     slot_info = SlotManagement.query.first()
     if not slot_info:
-        slot_info = SlotManagement(total_slots=12, filled_slots=len(teams), remaining_slots=12-len(teams))
+        slot_info = SlotManagement(total_slots=12, total_teams=12, filled_slots=len(teams), remaining_slots=12-len(teams))
         db.session.add(slot_info)
         db.session.commit()
     else:
