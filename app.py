@@ -159,7 +159,7 @@ def home():
     # Get slot information
     slot_info = SlotManagement.query.first()
     if not slot_info:
-        slot_info = SlotManagement(total_slots=12, filled_slots=0, remaining_slots=12)
+        slot_info = SlotManagement(total_slots=12, total_teams=12, filled_slots=0, remaining_slots=12)
         db.session.add(slot_info)
         db.session.commit()
     
@@ -168,20 +168,25 @@ def home():
     slot_info.remaining_slots = slot_info.total_slots - team_count
     db.session.commit()
     
-    # Get auction countdown time - Set to Saturday Dec 14, 2025
+    # Get auction settings from database
     auction_setting = AuctionSetting.query.first()
-    if auction_setting:
-        countdown_time = auction_setting.auction_start_time
-    else:
+    if not auction_setting:
         # Default: Saturday December 14, 2025 at 10:00 AM
         countdown_time = datetime(2025, 12, 14, 10, 0, 0)
-        auction_setting = AuctionSetting(auction_start_time=countdown_time)
+        auction_setting = AuctionSetting(
+            auction_start_time=countdown_time,
+            auction_date="Saturday, December 14, 2025",
+            auction_place="Main Auditorium"
+        )
         db.session.add(auction_setting)
         db.session.commit()
     
+    countdown_time = auction_setting.auction_start_time
+    
     return render_template('index.html', teams=teams, team_count=team_count, 
                          countdown_time=countdown_time, slot_info=slot_info,
-                         players=players, player_count=player_count)
+                         players=players, player_count=player_count,
+                         auction_setting=auction_setting)
 
 @app.route('/api/countdown')
 def get_countdown():
@@ -277,6 +282,78 @@ def admin_dashboard():
         slot_info.remaining_slots = slot_info.total_slots - len(teams)
         db.session.commit()
     return render_template('admin_dashboard.html', teams=teams, players=players, auction_setting=auction_setting, slot_info=slot_info)
+
+@app.route('/admin/settings', methods=['GET', 'POST'])
+@admin_required
+def admin_settings():
+    slot_info = SlotManagement.query.first()
+    auction_setting = AuctionSetting.query.first()
+    
+    if not slot_info:
+        slot_info = SlotManagement(total_slots=12, total_teams=12, filled_slots=0, remaining_slots=12)
+        db.session.add(slot_info)
+        db.session.commit()
+    
+    if not auction_setting:
+        default_time = datetime(2025, 12, 14, 10, 0, 0)
+        auction_setting = AuctionSetting(
+            auction_start_time=default_time,
+            auction_date="Saturday, December 14, 2025",
+            auction_place="Main Auditorium"
+        )
+        db.session.add(auction_setting)
+        db.session.commit()
+    
+    if request.method == 'POST':
+        # Update slot management
+        total_slots = request.form.get('total_slots')
+        total_teams = request.form.get('total_teams')
+        
+        try:
+            slot_info.total_slots = int(total_slots) if total_slots else 12
+            slot_info.total_teams = int(total_teams) if total_teams else 12
+            # Recalculate remaining slots
+            teams = Team.query.all()
+            slot_info.filled_slots = len(teams)
+            slot_info.remaining_slots = slot_info.total_slots - slot_info.filled_slots
+            db.session.commit()
+        except ValueError:
+            flash('Invalid slot or team numbers', 'error')
+        
+        # Update auction settings
+        auction_date = request.form.get('auction_date')
+        auction_time = request.form.get('auction_time')
+        auction_place = request.form.get('auction_place')
+        
+        if auction_date and auction_time:
+            try:
+                # Parse date and time
+                date_time_str = f"{auction_date} {auction_time}"
+                countdown_time = datetime.strptime(date_time_str, "%Y-%m-%d %H:%M")
+                
+                auction_setting.auction_start_time = countdown_time
+                auction_setting.auction_date = auction_date
+                auction_setting.auction_place = auction_place or "Main Auditorium"
+                db.session.commit()
+                
+                flash('Settings updated successfully!', 'success')
+            except ValueError:
+                flash('Invalid date or time format', 'error')
+        else:
+            flash('Please provide both date and time', 'error')
+        
+        return redirect(url_for('admin_settings'))
+    
+    # Format datetime for form input
+    auction_datetime = auction_setting.auction_start_time
+    auction_date_str = auction_datetime.strftime('%Y-%m-%d')
+    auction_time_str = auction_datetime.strftime('%H:%M')
+    
+    return render_template('admin_settings.html', 
+                         slot_info=slot_info, 
+                         auction_setting=auction_setting,
+                         auction_date_str=auction_date_str,
+                         auction_time_str=auction_time_str)
 
 @app.route('/team/dashboard/<int:team_id>')
 @team_required
@@ -828,6 +905,32 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Migration check: {e}")
         
+        # Migrate SlotManagement table
+        try:
+            if 'slot_management' in inspector.get_table_names():
+                slot_columns = [col['name'] for col in inspector.get_columns('slot_management')]
+                if 'total_teams' not in slot_columns:
+                    db.session.execute(text('ALTER TABLE slot_management ADD COLUMN total_teams INTEGER DEFAULT 12'))
+                    db.session.commit()
+                    print("✓ Added total_teams column to slot_management table")
+        except Exception as e:
+            print(f"SlotManagement migration: {e}")
+        
+        # Migrate AuctionSetting table
+        try:
+            if 'auction_setting' in inspector.get_table_names():
+                auction_columns = [col['name'] for col in inspector.get_columns('auction_setting')]
+                if 'auction_date' not in auction_columns:
+                    db.session.execute(text('ALTER TABLE auction_setting ADD COLUMN auction_date VARCHAR(100)'))
+                    db.session.commit()
+                    print("✓ Added auction_date column to auction_setting table")
+                if 'auction_place' not in auction_columns:
+                    db.session.execute(text('ALTER TABLE auction_setting ADD COLUMN auction_place VARCHAR(200)'))
+                    db.session.commit()
+                    print("✓ Added auction_place column to auction_setting table")
+        except Exception as e:
+            print(f"AuctionSetting migration: {e}")
+        
         # Create player_photos directory
         os.makedirs(app.config['PLAYER_PHOTO_FOLDER'], exist_ok=True)
         
@@ -841,13 +944,17 @@ if __name__ == '__main__':
         
         # Initialize slot management
         if not SlotManagement.query.first():
-            slot_mgmt = SlotManagement(total_slots=12, filled_slots=0, remaining_slots=12)
+            slot_mgmt = SlotManagement(total_slots=12, total_teams=12, filled_slots=0, remaining_slots=12)
             db.session.add(slot_mgmt)
         
         # Initialize default auction time - Saturday Dec 14, 2025 at 10:00 AM
         if not AuctionSetting.query.first():
             default_time = datetime(2025, 12, 14, 10, 0, 0)
-            auction_setting = AuctionSetting(auction_start_time=default_time)
+            auction_setting = AuctionSetting(
+                auction_start_time=default_time,
+                auction_date="Saturday, December 14, 2025",
+                auction_place="Main Auditorium"
+            )
             db.session.add(auction_setting)
         
         # Add sample teams if database is empty

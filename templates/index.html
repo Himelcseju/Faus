@@ -17,14 +17,39 @@
     <div class="col-12">
         <div class="card countdown-card shadow-lg">
             <div class="card-body text-center">
-                <h2 class="card-title mb-2" style="font-size: 1.8rem; font-weight: bold;">
+                <h2 class="card-title mb-3" style="font-size: 1.8rem; font-weight: bold;">
                     {{ auction_setting.auction_date if auction_setting and auction_setting.auction_date else 'Saturday, December 14, 2025' }}
                 </h2>
-                {% if auction_setting and auction_setting.auction_place %}
-                <p class="mb-2" style="font-size: 1rem; opacity: 0.9;">
-                    <i class="bi bi-geo-alt-fill"></i> {{ auction_setting.auction_place }}
-                </p>
-                {% endif %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-2 mb-md-0">
+                        {% if auction_setting and auction_setting.auction_place %}
+                        <p class="mb-0" style="font-size: 1.1rem; opacity: 0.95;">
+                            <i class="bi bi-geo-alt-fill text-danger" style="font-size: 1.2rem;"></i> 
+                            <strong>{{ auction_setting.auction_place }}</strong>
+                        </p>
+                        {% else %}
+                        <p class="mb-0" style="font-size: 1.1rem; opacity: 0.95;">
+                            <i class="bi bi-geo-alt-fill text-danger" style="font-size: 1.2rem;"></i> 
+                            <strong>Main Auditorium</strong>
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if auction_setting and auction_setting.auction_start_time %}
+                        <p class="mb-0" style="font-size: 1.1rem; opacity: 0.95;">
+                            <i class="bi bi-clock-fill text-primary" style="font-size: 1.2rem;"></i> 
+                            <strong>{{ auction_setting.auction_start_time.strftime('%I:%M %p') if auction_setting.auction_start_time else '10:00 AM' }}</strong>
+                        </p>
+                        {% else %}
+                        <p class="mb-0" style="font-size: 1.1rem; opacity: 0.95;">
+                            <i class="bi bi-clock-fill text-primary" style="font-size: 1.2rem;"></i> 
+                            <strong>10:00 AM</strong>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
                 <h3 class="card-title mb-4" style="font-size: 1.2rem; opacity: 0.9;">
                     <i class="bi bi-clock-history"></i> Auction Countdown
                 </h3>
