@@ -18,8 +18,13 @@
         <div class="card countdown-card shadow-lg">
             <div class="card-body text-center">
                 <h2 class="card-title mb-2" style="font-size: 1.8rem; font-weight: bold;">
-                    Saturday, December 14, 2025
+                    {{ auction_setting.auction_date if auction_setting and auction_setting.auction_date else 'Saturday, December 14, 2025' }}
                 </h2>
+                {% if auction_setting and auction_setting.auction_place %}
+                <p class="mb-2" style="font-size: 1rem; opacity: 0.9;">
+                    <i class="bi bi-geo-alt-fill"></i> {{ auction_setting.auction_place }}
+                </p>
+                {% endif %}
                 <h3 class="card-title mb-4" style="font-size: 1.2rem; opacity: 0.9;">
                     <i class="bi bi-clock-history"></i> Auction Countdown
                 </h3>

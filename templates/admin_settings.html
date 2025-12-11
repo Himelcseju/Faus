@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings - Football Auction{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5">
+            <i class="bi bi-gear"></i> Admin Settings
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-sliders"></i> Slot & Team Management</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_settings') }}">
+                    <div class="mb-3">
+                        <label for="total_teams" class="form-label">
+                            <i class="bi bi-people"></i> Total Teams (Maximum Allowed)
+                        </label>
+                        <input type="number" class="form-control" id="total_teams" name="total_teams" 
+                               min="1" value="{{ slot_info.total_teams }}" required>
+                        <small class="form-text text-muted">Maximum number of teams that can be registered</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="total_slots" class="form-label">
+                            <i class="bi bi-grid-3x3"></i> Total Slots
+                        </label>
+                        <input type="number" class="form-control" id="total_slots" name="total_slots" 
+                               min="1" value="{{ slot_info.total_slots }}" required>
+                        <small class="form-text text-muted">Total available slots for teams</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Current Status:</strong><br>
+                        Filled: {{ slot_info.filled_slots }} | Remaining: {{ slot_info.remaining_slots }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Update Slots & Teams
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Auction Date & Time</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_settings') }}">
+                    <div class="mb-3">
+                        <label for="auction_date" class="form-label">
+                            <i class="bi bi-calendar"></i> Auction Date
+                        </label>
+                        <input type="date" class="form-control" id="auction_date" name="auction_date" 
+                               value="{{ auction_date_str }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="auction_time" class="form-label">
+                            <i class="bi bi-clock"></i> Auction Time
+                        </label>
+                        <input type="time" class="form-control" id="auction_time" name="auction_time" 
+                               value="{{ auction_time_str }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="auction_place" class="form-label">
+                            <i class="bi bi-geo-alt"></i> Auction Place/Venue
+                        </label>
+                        <input type="text" class="form-control" id="auction_place" name="auction_place" 
+                               value="{{ auction_setting.auction_place if auction_setting and auction_setting.auction_place else '' }}" 
+                               placeholder="Enter auction venue/location">
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Current Settings:</strong><br>
+                        Date: {{ auction_setting.auction_date if auction_setting and auction_setting.auction_date else 'Not set' }}<br>
+                        Time: {{ auction_setting.auction_start_time.strftime('%H:%M') if auction_setting else 'Not set' }}<br>
+                        Place: {{ auction_setting.auction_place if auction_setting and auction_setting.auction_place else 'Not set' }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Update Auction Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

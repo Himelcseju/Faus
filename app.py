@@ -40,6 +40,8 @@ class Team(db.Model):
 class AuctionSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     auction_start_time = db.Column(db.DateTime, nullable=False)
+    auction_date = db.Column(db.String(100), nullable=True)  # e.g., "Saturday, December 14, 2025"
+    auction_place = db.Column(db.String(200), nullable=True)  # Auction venue/location
     is_active = db.Column(db.Boolean, default=True)
 
 class Admin(db.Model):
