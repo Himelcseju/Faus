@@ -59,6 +59,7 @@ class TeamUser(db.Model):
 class SlotManagement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     total_slots = db.Column(db.Integer, default=12, nullable=False)
+    total_teams = db.Column(db.Integer, default=12, nullable=False)  # Maximum teams allowed
     filled_slots = db.Column(db.Integer, default=0, nullable=False)
     remaining_slots = db.Column(db.Integer, default=12, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
