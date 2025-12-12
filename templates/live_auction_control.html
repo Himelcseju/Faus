@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block title %}Live Auction Control - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="display-5">
+                <i class="bi bi-broadcast"></i> Live Auction Control: {{ auction.name }}
+            </h2>
+            <div class="alert alert-success">
+                <i class="bi bi-circle-fill text-danger"></i> <strong>LIVE</strong> - Auction is currently active
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Current Player Section -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Current Player</h5>
+                </div>
+                <div class="card-body" id="currentPlayerSection">
+                    {% if current_player %}
+                    <div class="text-center">
+                        {% if current_player.photo_filename %}
+                        <img src="{{ url_for('static', filename='uploads/player_photos/' + current_player.photo_filename) }}" 
+                             alt="{{ current_player.name }}" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                        {% endif %}
+                        <h4>{{ current_player.name }}</h4>
+                        <p><span class="badge bg-primary">{{ current_player.batch }}</span> 
+                           <span class="badge bg-success">{{ current_player.position }}</span></p>
+                        <p><strong>Base Price:</strong> ৳{{ "%.2f"|format(current_player.base_price) }}</p>
+                        <p><strong>Bid Amount:</strong> ৳<span id="currentBid">{{ "%.2f"|format(auction.highest_bid) }}</span></p>
+                        {% set total_amount = current_player.base_price + auction.highest_bid %}
+                        <p><strong>Total Amount:</strong> ৳<span id="totalAmount" class="text-success fw-bold">{{ "%.2f"|format(total_amount) }}</span></p>
+                        {% if auction.highest_bid_team %}
+                        <p><strong>Highest Bidder:</strong> <span id="highestBidder">{{ auction.highest_bid_team.name }}</span></p>
+                        {% else %}
+                        <p><strong>Highest Bidder:</strong> <span id="highestBidder">No bids yet</span></p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">No player selected. Select a player to start bidding.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bidding Control Section -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-gavel"></i> Place Bid (Manual)</h5>
+                </div>
+                <div class="card-body">
+                    <form id="placeBidForm">
+                        <input type="hidden" id="auctionId" value="{{ auction.id }}">
+                        <input type="hidden" id="playerId" value="{{ current_player.id if current_player else '' }}">
+                        
+                        <div class="mb-3">
+                            <label for="teamSelect" class="form-label">Select Team</label>
+                            <select class="form-select" id="teamSelect" required>
+                                <option value="">Choose team...</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bidAmount" class="form-label">Bid Amount (৳)</label>
+                            <input type="number" class="form-control" id="bidAmount" 
+                                   step="0.01" min="0"
+                                   value="{{ auction.highest_bid if auction.highest_bid else 0 }}" required>
+                            <small class="form-text text-muted">
+                                Enter any bid amount. Total = Base Price + Bid Amount
+                            </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg w-100" id="placeBidSubmitBtn" {% if not current_player %}disabled{% endif %}>
+                            <i class="bi bi-hand-thumbs-up"></i> Place Bid
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Player Selection -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Select Player</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" id="randomPlayerBtn">
+                            <i class="bi bi-shuffle"></i> Random Player
+                        </button>
+                        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#selectPlayerModal">
+                            <i class="bi bi-list"></i> Select Player Manually
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-danger" id="sellPlayerBtn" {% if not current_player %}disabled{% endif %}>
+                            <i class="bi bi-check-circle"></i> Sell Player
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Spending Tracker (Fixed Position) -->
+    <div class="position-fixed" style="top: 80px; right: 20px; width: 320px; z-index: 1000; max-height: 500px; overflow-y: auto;">
+        <div class="card shadow-lg border-primary">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> Team Spending (Current Player)</h6>
+            </div>
+            <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+                <div id="teamSpendingTracker">
+                    <p class="text-muted text-center small mb-0">No bids yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bids -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Bids</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentBids" class="list-group">
+                        <!-- Bids will be added here via Socket.IO -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Select Player Modal -->
+<div class="modal fade" id="selectPlayerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Player</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    {% for player in available_players %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                {% if player.photo_filename %}
+                                <img src="{{ url_for('static', filename='uploads/player_photos/' + player.photo_filename) }}" 
+                                     alt="{{ player.name }}" class="img-fluid rounded mb-2" style="max-height: 100px;">
+                                {% endif %}
+                                <h6>{{ player.name }}</h6>
+                                <p class="mb-1">
+                                    <span class="badge bg-primary">{{ player.batch }}</span>
+                                    <span class="badge bg-success">{{ player.position }}</span>
+                                </p>
+                                <button class="btn btn-sm btn-primary select-player-btn" data-player-id="{{ player.id }}">
+                                    Select
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const auctionId = {{ auction.id }};
+
+    socket.on('connect', function() {
+        console.log('Connected to auction server');
+    });
+
+    socket.on('player_live', function(data) {
+        updateCurrentPlayer(data);
+    });
+
+    socket.on('new_bid', function(data) {
+        updateBidDisplay(data);
+        addBidToHistory(data);
+    });
+
+    socket.on('player_sold', function(data) {
+        alert(`Player ${data.player_name} sold to ${data.team_name} for ৳${data.sold_price.toFixed(2)}`);
+        
+        // Clear current player display
+        document.getElementById('currentPlayerSection').innerHTML = '<p class="text-center text-muted">No player selected. Select a player to start bidding.</p>';
+        document.getElementById('playerId').value = '';
+        
+        // Disable Place Bid button until new player is selected
+        const placeBidBtn = document.getElementById('placeBidSubmitBtn');
+        if (placeBidBtn) {
+            placeBidBtn.disabled = true;
+        }
+        
+        // Reset cumulative bid amount
+        cumulativeBidAmount = 0;
+        
+        // Don't reload page - just reset the state so button can be enabled when new player is selected
+    });
+
+    function updateCurrentPlayer(data) {
+        // Store base price globally
+        currentBasePrice = data.base_price || 0;
+        
+        // Calculate total: Base Price + Cumulative Bids
+        cumulativeBidAmount = data.current_bid || 0;  // Reset cumulative amount
+        const totalAmount = currentBasePrice + cumulativeBidAmount;
+        
+        document.getElementById('currentPlayerSection').innerHTML = `
+            <div class="text-center">
+                ${data.photo ? `<img src="/static/uploads/player_photos/${data.photo}" class="img-fluid rounded mb-3" style="max-height: 200px;">` : ''}
+                <h4>${data.player_name}</h4>
+                <p><span class="badge bg-primary">${data.batch}</span> 
+                   <span class="badge bg-success">${data.position}</span></p>
+                <p><strong>Base Price:</strong> ৳${data.base_price.toFixed(2)}</p>
+                <p><strong>Bid Amount:</strong> ৳<span id="currentBid">${cumulativeBidAmount.toFixed(2)}</span></p>
+                <p><strong>Total Amount:</strong> ৳<span id="totalAmount" class="text-success fw-bold">${totalAmount.toFixed(2)}</span></p>
+                <p><strong>Highest Bidder:</strong> <span id="highestBidder">No bids yet</span></p>
+            </div>
+        `;
+        document.getElementById('playerId').value = data.player_id;
+        document.getElementById('bidAmount').value = 0;  // Reset bid input to 0
+        document.getElementById('bidAmount').min = 0;  // No minimum restriction
+        
+        // IMPORTANT: Enable Place Bid button when player is selected
+        const placeBidBtn = document.getElementById('placeBidSubmitBtn');
+        if (placeBidBtn) {
+            placeBidBtn.disabled = false;
+            placeBidBtn.classList.remove('disabled');
+        }
+        
+        // Also enable the form if it was disabled
+        const placeBidForm = document.getElementById('placeBidForm');
+        if (placeBidForm) {
+            const formInputs = placeBidForm.querySelectorAll('input, select, button');
+            formInputs.forEach(input => {
+                if (input.id !== 'placeBidSubmitBtn') {
+                    input.disabled = false;
+                }
+            });
+        }
+        
+        // Load team spending for this player
+        loadTeamSpending(data.player_id);
+    }
+
+    // Store base price for calculations
+    let currentBasePrice = {{ current_player.base_price if current_player else 0 }};
+    // Store cumulative bid amount (all bids add up)
+    let cumulativeBidAmount = {{ auction.highest_bid if auction and auction.highest_bid else 0 }};
+
+    function updateBidDisplay(data) {
+        // Get base price from data or stored value
+        const basePrice = data.base_price || currentBasePrice || 0;
+        const bidAmount = parseFloat(data.amount) || 0;
+        
+        // CUMULATIVE BIDDING: Update cumulative total
+        if (data.cumulative_bid !== undefined) {
+            cumulativeBidAmount = parseFloat(data.cumulative_bid);
+        } else {
+            cumulativeBidAmount = cumulativeBidAmount + bidAmount;
+        }
+        
+        // Calculate total: Base Price + Cumulative Bids
+        const totalAmount = data.total_amount || (basePrice + cumulativeBidAmount);
+        
+        // Update display
+        document.getElementById('currentBid').textContent = cumulativeBidAmount.toFixed(2);
+        document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
+        document.getElementById('highestBidder').textContent = data.team_name + ' (Last Bidder)';
+        
+        // Update team spending tracker
+        updateTeamSpending(data.team_id, data.team_name, data.amount);
+    }
+
+    // Team spending tracker
+    let teamSpending = {}; // {team_id: {name, total}}
+
+    function loadTeamSpending(playerId) {
+        if (!playerId) return;
+        
+        fetch(`/admin/auction/team-spending/${auctionId}/${playerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    teamSpending = {};
+                    data.spending.forEach(item => {
+                        teamSpending[item.team_id] = {
+                            name: item.team_name,
+                            total: item.total_bid
+                        };
+                    });
+                    updateTeamSpendingDisplay();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading team spending:', error);
+            });
+    }
+
+    function updateTeamSpending(teamId, teamName, bidAmount) {
+        if (!teamSpending[teamId]) {
+            teamSpending[teamId] = {
+                name: teamName,
+                total: 0
+            };
+        }
+        teamSpending[teamId].total += parseFloat(bidAmount);
+        updateTeamSpendingDisplay();
+    }
+
+    function updateTeamSpendingDisplay() {
+        const tracker = document.getElementById('teamSpendingTracker');
+        const teams = Object.values(teamSpending);
+        
+        if (teams.length === 0) {
+            tracker.innerHTML = '<p class="text-muted text-center small mb-0">No bids yet</p>';
+            return;
+        }
+        
+        // Sort by total (highest first)
+        teams.sort((a, b) => b.total - a.total);
+        
+        let html = '<div class="list-group list-group-flush">';
+        teams.forEach(team => {
+            html += `
+                <div class="list-group-item p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">${team.name}</span>
+                        <span class="text-success">৳${team.total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        tracker.innerHTML = html;
+    }
+
+    function addBidToHistory(data) {
+        const bidsDiv = document.getElementById('recentBids');
+        
+        // Remove placeholder if exists
+        const placeholder = bidsDiv.querySelector('.text-muted');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        const bidElement = document.createElement('div');
+        bidElement.className = 'list-group-item';
+        bidElement.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>${data.team_name}</strong> bid <strong class="text-success">৳${data.amount.toFixed(2)}</strong>
+                    <small class="text-muted"> (Total: ৳${data.total_amount.toFixed(2)})</small>
+                </div>
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+            </div>
+        `;
+        bidsDiv.insertBefore(bidElement, bidsDiv.firstChild);
+        
+        // Limit to 20 recent bids
+        while (bidsDiv.children.length > 20) {
+            bidsDiv.removeChild(bidsDiv.lastChild);
+        }
+    }
+
+    // Define functions first
+    function selectPlayer(playerId) {
+        console.log('Selecting player:', playerId, 'for auction:', auctionId);
+        
+        fetch('/admin/auction/select-player', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                auction_id: auctionId,
+                player_id: playerId,
+                random: false
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Select player response:', data);
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('selectPlayerModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                // Socket.IO will handle the update via player_live event
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error selecting player:', error);
+            alert('Error selecting player: ' + (error.error || error.message || 'Unknown error'));
+        });
+    }
+
+    function selectRandomPlayer() {
+        console.log('Selecting random player for auction:', auctionId);
+        
+        // Disable button to prevent multiple clicks
+        const btn = document.getElementById('randomPlayerBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Selecting...';
+        }
+        
+        fetch('/admin/auction/select-player', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                auction_id: auctionId,
+                random: true
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Select random player response:', data);
+            if (data.success) {
+                // Socket.IO will handle the update via player_live event
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-shuffle"></i> Random Player';
+                    btn.disabled = false;
+                }
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-shuffle"></i> Random Player';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error selecting random player:', error);
+            alert('Error selecting random player: ' + (error.error || error.message || 'Unknown error'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-shuffle"></i> Random Player';
+            }
+        });
+    }
+
+    // Event listeners - set up after functions are defined
+    document.addEventListener('DOMContentLoaded', function() {
+        // Random player button
+        const randomBtn = document.getElementById('randomPlayerBtn');
+        if (randomBtn) {
+            randomBtn.addEventListener('click', selectRandomPlayer);
+        }
+        
+        // Sell player button
+        const sellBtn = document.getElementById('sellPlayerBtn');
+        if (sellBtn) {
+            sellBtn.addEventListener('click', sellCurrentPlayer);
+        }
+        
+        // Manual player selection buttons
+        const selectBtns = document.querySelectorAll('.select-player-btn');
+        selectBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const playerId = parseInt(this.getAttribute('data-player-id'));
+                selectPlayer(playerId);
+            });
+        });
+
+        // Place Bid Form
+        const placeBidForm = document.getElementById('placeBidForm');
+        if (placeBidForm) {
+            placeBidForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const teamId = document.getElementById('teamSelect').value;
+                const bidAmount = parseFloat(document.getElementById('bidAmount').value);
+                const playerId = document.getElementById('playerId').value;
+
+                fetch('/admin/auction/place-bid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        auction_id: auctionId,
+                        player_id: parseInt(playerId),
+                        team_id: parseInt(teamId),
+                        bid_amount: bidAmount
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Socket.IO will handle the update
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error placing bid');
+                });
+            });
+        }
+    });
+
+    function sellCurrentPlayer() {
+        const playerId = document.getElementById('playerId').value;
+        if (!playerId) {
+            alert('No player selected');
+            return;
+        }
+
+        if (confirm('Sell this player to the highest bidder?')) {
+            fetch('/admin/auction/sell-player', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    auction_id: auctionId,
+                    player_id: parseInt(playerId)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Socket.IO will handle the update
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}
+

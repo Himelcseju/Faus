@@ -159,6 +159,91 @@
     </div>
 </div>
 
+<!-- Auctions Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-gavel"></i> All Auctions</h5>
+                <div>
+                    <a href="{{ url_for('add_auction') }}" class="btn btn-sm btn-dark">
+                        <i class="bi bi-plus-circle"></i> Create Auction
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Auction Name</th>
+                                <th>Min Bid</th>
+                                <th>Max Bid</th>
+                                <th>Sponsor</th>
+                                <th>Players</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for auction in auctions %}
+                            <tr>
+                                <td><strong>{{ auction.name }}</strong></td>
+                                <td>৳{{ "%.2f"|format(auction.min_bid) }}</td>
+                                <td>৳{{ "%.2f"|format(auction.max_bid) if auction.max_bid else 'N/A' }}</td>
+                                <td>{{ auction.sponsor or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ auction.players|length }} players</span>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if auction.status == 'draft' %}bg-secondary
+                                        {% elif auction.status == 'live' %}bg-success
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ auction.status|upper }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_auction', auction_id=auction.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    {% if auction.status == 'draft' %}
+                                    <form method="POST" action="{{ url_for('go_live_auction', auction_id=auction.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Go live with this auction?')">
+                                            <i class="bi bi-play-circle"></i> Go Live
+                                        </button>
+                                    </form>
+                                    {% elif auction.status == 'live' %}
+                                    <a href="{{ url_for('live_auction_control', auction_id=auction.id) }}" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-broadcast"></i> Control Auction
+                                    </a>
+                                    <form method="POST" action="{{ url_for('close_auction', auction_id=auction.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Close this auction?')">
+                                            <i class="bi bi-x-circle"></i> Close
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteAuction({{ auction.id }}, '{{ auction.name }}')">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not auctions %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="bi bi-inbox"></i> No auctions created yet. <a href="{{ url_for('add_auction') }}">Create your first auction</a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Players Section -->
 <div class="row mt-4">
     <div class="col-12">
@@ -272,6 +357,28 @@
         </div>
     </div>
 </div>
+
+<!-- Delete Auction Confirmation Modal -->
+<div class="modal fade" id="deleteAuctionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete auction <strong id="auctionNameToDelete"></strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteAuctionForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -287,6 +394,13 @@
         document.getElementById('playerNameToDelete').textContent = playerName;
         document.getElementById('deletePlayerForm').action = '/admin/player/delete/' + playerId;
         var deleteModal = new bootstrap.Modal(document.getElementById('deletePlayerModal'));
+        deleteModal.show();
+    }
+    
+    function confirmDeleteAuction(auctionId, auctionName) {
+        document.getElementById('auctionNameToDelete').textContent = auctionName;
+        document.getElementById('deleteAuctionForm').action = '/admin/auction/delete/' + auctionId;
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteAuctionModal'));
         deleteModal.show();
     }
 </script>

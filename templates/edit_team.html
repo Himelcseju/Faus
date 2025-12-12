@@ -49,7 +49,7 @@
                         </label>
                         <select class="form-select" id="batch" name="batch" required>
                             <option value="">Select Batch</option>
-                            {% for i in range(1, 33) %}
+                            {% for i in range(1, 36) %}
                             {% set cse_batch = 'CSE ' + i|string %}
                             <option value="CSE {{ i }}" {% if team.batch == cse_batch %}selected{% endif %}>CSE {{ i }}</option>
                             {% endfor %}

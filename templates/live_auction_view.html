@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Live Auction - Football Auction{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-4">
+                <i class="bi bi-broadcast text-danger"></i> LIVE AUCTION
+            </h1>
+            <div class="alert alert-danger">
+                <i class="bi bi-circle-fill"></i> <strong>LIVE NOW</strong> - {{ auction.name }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Current Player Display -->
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg mb-4" id="playerCard">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3 class="mb-0"><i class="bi bi-person"></i> Current Player</h3>
+                </div>
+                <div class="card-body text-center" id="currentPlayerDisplay">
+                    {% if current_player %}
+                    <div>
+                        {% if current_player.photo_filename %}
+                        <img src="{{ url_for('static', filename='uploads/player_photos/' + current_player.photo_filename) }}" 
+                             alt="{{ current_player.name }}" class="img-fluid rounded mb-3" style="max-height: 300px;">
+                        {% else %}
+                        <div class="bg-light rounded mb-3 d-flex align-items-center justify-content-center" style="height: 300px;">
+                            <i class="bi bi-person-circle" style="font-size: 150px; color: #ccc;"></i>
+                        </div>
+                        {% endif %}
+                        <h2 class="mb-2">{{ current_player.name }}</h2>
+                        <p class="mb-2">
+                            <span class="badge bg-primary fs-6">{{ current_player.batch }}</span>
+                            <span class="badge bg-success fs-6">{{ current_player.position }}</span>
+                        </p>
+                        <p class="fs-5 mb-2"><strong>Base Price:</strong> ৳{{ "%.2f"|format(current_player.base_price) }}</p>
+                    </div>
+                    {% else %}
+                    <div class="py-5">
+                        <i class="bi bi-hourglass-split" style="font-size: 80px; color: #ccc;"></i>
+                        <h4 class="mt-3 text-muted">Waiting for next player...</h4>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bidding Information -->
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4 class="mb-0"><i class="bi bi-gavel"></i> Current Bid</h4>
+                </div>
+                <div class="card-body text-center">
+                    {% if current_player %}
+                    {% set total_amount = current_player.base_price + (auction.highest_bid if auction.highest_bid else 0) %}
+                    <p class="mb-2"><strong>Base Price:</strong> ৳{{ "%.2f"|format(current_player.base_price) }}</p>
+                    <p class="mb-2"><strong>Bid Amount:</strong> ৳<span id="bidAmountDisplay">{{ "%.2f"|format(auction.highest_bid if auction.highest_bid else 0) }}</span></p>
+                    <h1 class="display-3 text-primary mb-3" id="currentBidDisplay">
+                        ৳{{ "%.2f"|format(total_amount) }}
+                    </h1>
+                    <p class="text-muted mb-2">(Base + Bid)</p>
+                    {% else %}
+                    <h1 class="display-3 text-primary mb-3" id="currentBidDisplay">
+                        ৳0.00
+                    </h1>
+                    {% endif %}
+                    <p class="fs-5 mb-0">
+                        <strong>Highest Bidder:</strong> 
+                        <span id="highestBidderDisplay" class="text-success">
+                            {% if highest_bid_team %}
+                            {{ highest_bid_team.name }}
+                            {% else %}
+                            No bids yet
+                            {% endif %}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Spending Tracker (Fixed Position) - Always Visible for All Users -->
+    <div class="position-fixed" style="top: 80px; right: 20px; width: 280px; z-index: 1000; max-height: 400px; overflow-y: auto;">
+        <div class="card shadow-lg border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> Team Spending (Current Player)</h6>
+            </div>
+            <div class="card-body p-2" style="max-height: 300px; overflow-y: auto;">
+                <div id="teamSpendingTracker">
+                    {% if current_player %}
+                    <p class="text-muted text-center small mb-0">Loading...</p>
+                    {% else %}
+                    <p class="text-muted text-center small mb-0">No player selected</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Bids -->
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Bids</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentBids" class="list-group">
+                        <!-- Bids will be added here via Socket.IO -->
+                        <div class="list-group-item text-center text-muted">
+                            <small>Bids will appear here in real-time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const auctionId = {{ auction.id if auction else 0 }};
+    let currentPlayerId = {{ current_player.id if current_player else 0 }};
+    let teamSpending = {}; // {team_id: {name, total}}
+
+    socket.on('connect', function() {
+        console.log('Connected to live auction');
+        // Load team spending if player is already selected
+        if (currentPlayerId && auctionId) {
+            loadTeamSpending(currentPlayerId);
+        }
+    });
+
+    socket.on('auction_started', function(data) {
+        console.log('Auction started:', data);
+        // Reload page to show auction
+        location.reload();
+    });
+
+    socket.on('player_live', function(data) {
+        updatePlayerDisplay(data);
+    });
+
+    socket.on('new_bid', function(data) {
+        console.log('Received new_bid event:', data);
+        console.log('Current base price:', currentBasePrice);
+        updateBidDisplay(data);
+        addBidToHistory(data);
+    });
+
+    socket.on('player_sold', function(data) {
+        showPlayerSold(data);
+        setTimeout(() => {
+            location.reload();
+        }, 3000);
+    });
+
+    function loadTeamSpending(playerId) {
+        if (!playerId || !auctionId) return;
+        
+        fetch(`/auction/team-spending/${auctionId}/${playerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    teamSpending = {};
+                    data.spending.forEach(item => {
+                        teamSpending[item.team_id] = {
+                            name: item.team_name,
+                            total: item.total_bid
+                        };
+                    });
+                    updateTeamSpendingDisplay();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading team spending:', error);
+            });
+    }
+
+    function updateTeamSpending(teamId, teamName, bidAmount) {
+        if (!teamSpending[teamId]) {
+            teamSpending[teamId] = {
+                name: teamName,
+                total: 0
+            };
+        }
+        teamSpending[teamId].total += parseFloat(bidAmount);
+        updateTeamSpendingDisplay();
+    }
+
+    function updateTeamSpendingDisplay() {
+        const tracker = document.getElementById('teamSpendingTracker');
+        if (!tracker) return;
+        
+        const teams = Object.values(teamSpending);
+        
+        if (teams.length === 0) {
+            tracker.innerHTML = '<p class="text-muted text-center small mb-0">No bids yet</p>';
+            return;
+        }
+        
+        // Sort by total (highest first)
+        teams.sort((a, b) => b.total - a.total);
+        
+        let html = '<div class="list-group list-group-flush">';
+        teams.forEach(team => {
+            html += `
+                <div class="list-group-item p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold small">${team.name}</span>
+                        <span class="text-success fw-bold">৳${team.total.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        tracker.innerHTML = html;
+    }
+
+    // Store base price globally
+    let currentBasePrice = {{ current_player.base_price if current_player else 0 }};
+    // Store cumulative bid amount (all bids add up)
+    let cumulativeBidAmount = {{ auction.highest_bid if auction and auction.highest_bid else 0 }};
+
+    function updatePlayerDisplay(data) {
+        currentPlayerId = data.player_id;
+        currentBasePrice = data.base_price || 0; // Store base price
+        
+        const playerCard = document.getElementById('currentPlayerDisplay');
+        playerCard.innerHTML = `
+            <div>
+                ${data.photo ? `
+                    <img src="/static/uploads/player_photos/${data.photo}" 
+                         alt="${data.player_name}" class="img-fluid rounded mb-3" style="max-height: 300px;">
+                ` : `
+                    <div class="bg-light rounded mb-3 d-flex align-items-center justify-content-center" style="height: 300px;">
+                        <i class="bi bi-person-circle" style="font-size: 150px; color: #ccc;"></i>
+                    </div>
+                `}
+                <h2 class="mb-2">${data.player_name}</h2>
+                <p class="mb-2">
+                    <span class="badge bg-primary fs-6">${data.batch}</span>
+                    <span class="badge bg-success fs-6">${data.position}</span>
+                </p>
+                <p class="fs-5 mb-2"><strong>Base Price:</strong> ৳${data.base_price.toFixed(2)}</p>
+            </div>
+        `;
+        
+        // Reset bid display - show base + cumulative bids = total
+        cumulativeBidAmount = data.current_bid || 0;  // Reset cumulative amount
+        const totalAmount = currentBasePrice + cumulativeBidAmount;
+        document.getElementById('bidAmountDisplay').textContent = cumulativeBidAmount.toFixed(2);
+        document.getElementById('currentBidDisplay').textContent = '৳' + totalAmount.toFixed(2);
+        document.getElementById('highestBidderDisplay').textContent = 'No bids yet';
+        
+        // Clear recent bids
+        document.getElementById('recentBids').innerHTML = `
+            <div class="list-group-item text-center text-muted">
+                <small>Bids will appear here in real-time</small>
+            </div>
+        `;
+        
+        // Reset and load team spending
+        teamSpending = {};
+        if (currentPlayerId && auctionId) {
+            loadTeamSpending(currentPlayerId);
+        } else {
+            // Show message if no player
+            const tracker = document.getElementById('teamSpendingTracker');
+            if (tracker) {
+                tracker.innerHTML = '<p class="text-muted text-center small mb-0">No player selected</p>';
+            }
+        }
+    }
+
+    function updateBidDisplay(data) {
+        // Always prioritize stored base price
+        const basePrice = (currentBasePrice && currentBasePrice > 0) ? currentBasePrice : (data.base_price || 0);
+        const bidAmount = parseFloat(data.amount) || 0;  // This individual bid amount
+        
+        // CUMULATIVE BIDDING: Update cumulative total
+        if (data.cumulative_bid !== undefined) {
+            cumulativeBidAmount = parseFloat(data.cumulative_bid);
+        } else {
+            cumulativeBidAmount = cumulativeBidAmount + bidAmount;  // Add this bid to total
+        }
+        
+        // Calculate total: Base Price + Cumulative Bids
+        const totalAmount = data.total_amount || (basePrice + cumulativeBidAmount);
+        
+        // Update display
+        const bidAmountEl = document.getElementById('bidAmountDisplay');
+        const currentBidEl = document.getElementById('currentBidDisplay');
+        const highestBidderEl = document.getElementById('highestBidderDisplay');
+        
+        if (bidAmountEl) {
+            // Show cumulative bid amount (all bids added together)
+            bidAmountEl.textContent = cumulativeBidAmount.toFixed(2);
+        }
+        
+        if (currentBidEl) {
+            // Update the big display with total (Base + Cumulative Bids)
+            const newValue = '৳' + totalAmount.toFixed(2);
+            currentBidEl.textContent = newValue;
+            
+            // Animate the update
+            currentBidEl.style.transition = 'all 0.3s ease';
+            currentBidEl.style.transform = 'scale(1.15)';
+            currentBidEl.style.color = '#28a745';
+            setTimeout(() => {
+                currentBidEl.style.transform = 'scale(1)';
+                currentBidEl.style.color = '#0d6efd';
+            }, 500);
+        }
+        
+        if (highestBidderEl) {
+            highestBidderEl.textContent = data.team_name + ' (Last Bidder)';
+            highestBidderEl.classList.add('text-success');
+        }
+        
+        // Update team spending
+        updateTeamSpending(data.team_id, data.team_name, data.amount);
+    }
+
+    function addBidToHistory(data) {
+        const bidsDiv = document.getElementById('recentBids');
+        
+        // Remove placeholder if exists
+        const placeholder = bidsDiv.querySelector('.text-muted');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        const bidElement = document.createElement('div');
+        bidElement.className = 'list-group-item';
+        bidElement.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong class="text-primary">${data.team_name}</strong> 
+                    <span class="text-muted">bid</span>
+                    <strong class="text-success">৳${data.amount.toFixed(2)}</strong>
+                    <small class="text-muted"> (Total: ৳${data.total_amount.toFixed(2)})</small>
+                </div>
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+            </div>
+        `;
+        bidsDiv.insertBefore(bidElement, bidsDiv.firstChild);
+        
+        // Limit to 20 recent bids
+        while (bidsDiv.children.length > 20) {
+            bidsDiv.removeChild(bidsDiv.lastChild);
+        }
+    }
+
+    function showPlayerSold(data) {
+        const playerCard = document.getElementById('playerCard');
+        playerCard.classList.add('border-success', 'border-3');
+        playerCard.querySelector('.card-header').classList.remove('bg-primary');
+        playerCard.querySelector('.card-header').classList.add('bg-success');
+        
+        const finalPrice = data.sold_price || 0;
+        const basePrice = data.base_price || currentBasePrice || 0;
+        const cumulativeBids = data.cumulative_bids || (finalPrice - basePrice);
+        
+        const playerDisplay = document.getElementById('currentPlayerDisplay');
+        playerDisplay.innerHTML = `
+            <div class="py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 80px;"></i>
+                <h2 class="mt-3 text-success">SOLD!</h2>
+                <h4>${data.player_name}</h4>
+                <p class="fs-5">
+                    <strong>Sold to:</strong> <span class="text-success fw-bold">${data.team_name}</span><br>
+                    <strong>Base Price:</strong> ৳${basePrice.toFixed(2)}<br>
+                    <strong>Cumulative Bids:</strong> ৳${cumulativeBids.toFixed(2)}<br>
+                    <strong class="fs-4 text-primary">Final Price: ৳${finalPrice.toFixed(2)}</strong>
+                </p>
+            </div>
+        `;
+        
+        // Update the big price display to show final price
+        const currentBidEl = document.getElementById('currentBidDisplay');
+        if (currentBidEl) {
+            currentBidEl.textContent = '৳' + finalPrice.toFixed(2);
+            currentBidEl.classList.add('text-success');
+        }
+    }
+</script>
+{% endblock %}
+

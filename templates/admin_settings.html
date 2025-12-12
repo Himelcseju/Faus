@@ -58,6 +58,25 @@
             <div class="card-body">
                 <form method="POST" action="{{ url_for('admin_settings') }}">
                     <div class="mb-3">
+                        <label for="selected_auction_id" class="form-label">
+                            <i class="bi bi-gavel"></i> Select Auction (Optional)
+                        </label>
+                        <select class="form-control" id="selected_auction_id" name="selected_auction_id" onchange="updateAuctionSettings()">
+                            <option value="">Default Auction Setting</option>
+                            {% for auction in auctions %}
+                            <option value="{{ auction.id }}" 
+                                {% if auction.auction_setting_id == auction_setting.id %}selected{% endif %}
+                                data-date="{{ auction.auction_setting.auction_start_time.strftime('%Y-%m-%d') if auction.auction_setting and auction.auction_setting.auction_start_time else '' }}"
+                                data-time="{{ auction.auction_setting.auction_start_time.strftime('%H:%M') if auction.auction_setting and auction.auction_setting.auction_start_time else '' }}"
+                                data-place="{{ auction.auction_setting.auction_place if auction.auction_setting and auction.auction_setting.auction_place else '' }}">
+                                {{ auction.name }} ({{ auction.status|upper }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Select an auction to update its date, time, and location. Leave blank to update default settings.</small>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="auction_date" class="form-label">
                             <i class="bi bi-calendar"></i> Auction Date
                         </label>
@@ -109,5 +128,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateAuctionSettings() {
+        const select = document.getElementById('selected_auction_id');
+        const selectedOption = select.options[select.selectedIndex];
+        
+        if (selectedOption.value && selectedOption.dataset.date) {
+            // Update form fields with selected auction's settings
+            document.getElementById('auction_date').value = selectedOption.dataset.date;
+            document.getElementById('auction_time').value = selectedOption.dataset.time;
+            document.getElementById('auction_place').value = selectedOption.dataset.place || '';
+        } else {
+            // Reset to default settings
+            document.getElementById('auction_date').value = '{{ auction_date_str }}';
+            document.getElementById('auction_time').value = '{{ auction_time_str }}';
+            document.getElementById('auction_place').value = '{{ auction_setting.auction_place if auction_setting and auction_setting.auction_place else "" }}';
+        }
+    }
+</script>
 {% endblock %}
 

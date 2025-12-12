@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Add Auction - Football Auction{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5">
+            <i class="bi bi-plus-circle"></i> Create New Auction
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-gavel"></i> Auction Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_auction') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="bi bi-tag"></i> Auction Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="Enter auction name" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="min_bid" class="form-label">
+                                <i class="bi bi-currency-dollar"></i> Minimum Bid <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="min_bid" name="min_bid" 
+                                   step="0.01" min="0" value="0" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="max_bid" class="form-label">
+                                <i class="bi bi-currency-dollar"></i> Maximum Bid
+                            </label>
+                            <input type="number" class="form-control" id="max_bid" name="max_bid" 
+                                   step="0.01" min="0" placeholder="Optional">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="sponsor" class="form-label">
+                            <i class="bi bi-building"></i> Sponsor
+                        </label>
+                        <input type="text" class="form-control" id="sponsor" name="sponsor" 
+                               placeholder="Enter sponsor name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="auction_setting_id" class="form-label">
+                            <i class="bi bi-calendar-event"></i> Link to Auction Setting
+                        </label>
+                        <select class="form-control" id="auction_setting_id" name="auction_setting_id">
+                            <option value="">None (Create new setting later)</option>
+                            {% for setting in auction_settings %}
+                            <option value="{{ setting.id }}">
+                                {{ setting.auction_date }} - {{ setting.auction_place }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Select an existing auction setting or leave blank to create later</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-people"></i> Select Players <span class="text-danger">*</span>
+                        </label>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            {% if players %}
+                            <div class="mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllPlayers()">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllPlayers()">Deselect All</button>
+                            </div>
+                            {% for player in players %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input player-checkbox" type="checkbox" 
+                                       name="players" value="{{ player.id }}" id="player_{{ player.id }}">
+                                <label class="form-check-label" for="player_{{ player.id }}">
+                                    <strong>{{ player.name }}</strong> - 
+                                    <span class="badge bg-primary">{{ player.batch }}</span>
+                                    <span class="badge bg-success">{{ player.position }}</span>
+                                    <span class="text-muted">(Base: ৳{{ "%.2f"|format(player.base_price) }})</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted">No players available. <a href="{{ url_for('add_player') }}">Add players first</a></p>
+                            {% endif %}
+                        </div>
+                        <small class="form-text text-muted">Select one or more players for this auction</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Auction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectAllPlayers() {
+        document.querySelectorAll('.player-checkbox').forEach(cb => cb.checked = true);
+    }
+    
+    function deselectAllPlayers() {
+        document.querySelectorAll('.player-checkbox').forEach(cb => cb.checked = false);
+    }
+</script>
+{% endblock %}
+
