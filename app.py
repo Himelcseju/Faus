@@ -31,13 +31,9 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
 
 db = SQLAlchemy(app)
 
-# Initialize Socket.IO - use eventlet for production (Render), threading for local dev
-# Render uses eventlet worker, so we need eventlet mode
-import os
-if os.environ.get('RENDER'):
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-else:
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# Initialize Socket.IO - use threading mode (compatible with Python 3.13)
+# Eventlet doesn't support Python 3.13, so we use threading mode everywhere
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Database Models
 class Team(db.Model):
