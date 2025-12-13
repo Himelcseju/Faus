@@ -153,34 +153,92 @@
 
 <!-- Select Player Modal -->
 <div class="modal fade" id="selectPlayerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Select Player</h5>
+                <h5 class="modal-title"><i class="bi bi-people"></i> Select Player</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="row">
+                <!-- Search and Filter Section -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="playerSearch" class="form-label"><i class="bi bi-search"></i> Search Player</label>
+                        <input type="text" class="form-control" id="playerSearch" placeholder="Search by name...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterBatch" class="form-label"><i class="bi bi-funnel"></i> Filter by Batch</label>
+                        <select class="form-select" id="filterBatch">
+                            <option value="">All Batches</option>
+                            {% for i in range(1, 36) %}
+                            <option value="CSE {{ i }}">CSE {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filterPosition" class="form-label"><i class="bi bi-funnel-fill"></i> Filter by Position</label>
+                        <select class="form-select" id="filterPosition">
+                            <option value="">All Positions</option>
+                            <option value="Goalkeeper (GK)">Goalkeeper (GK)</option>
+                            <option value="Right Back (RB)">Right Back (RB)</option>
+                            <option value="Left Back (LB)">Left Back (LB)</option>
+                            <option value="Center Back (CB)">Center Back (CB)</option>
+                            <option value="Defensive Midfielder (CDM)">Defensive Midfielder (CDM)</option>
+                            <option value="Right Midfielder (RM)">Right Midfielder (RM)</option>
+                            <option value="Left Midfielder (LM)">Left Midfielder (LM)</option>
+                            <option value="Central Midfielder (CM)">Central Midfielder (CM)</option>
+                            <option value="Attacking Midfielder (CAM)">Attacking Midfielder (CAM)</option>
+                            <option value="Right Winger (RW)">Right Winger (RW)</option>
+                            <option value="Left Winger (LW)">Left Winger (LW)</option>
+                            <option value="Striker (ST)">Striker (ST)</option>
+                            <option value="Center Forward (CF)">Center Forward (CF)</option>
+                            <option value="Second Striker (SS)">Second Striker (SS)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearFilters">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </button>
+                    <span class="ms-2 text-muted" id="playerCount">{{ available_players|length }} players available</span>
+                </div>
+                
+                <!-- Players Grid -->
+                <div class="row" id="playersGrid">
                     {% for player in available_players %}
-                    <div class="col-md-4 mb-3">
-                        <div class="card">
+                    <div class="col-md-4 mb-3 player-card" 
+                         data-player-name="{{ player.name|lower }}" 
+                         data-player-batch="{{ player.batch }}" 
+                         data-player-position="{{ player.position }}">
+                        <div class="card h-100">
                             <div class="card-body text-center">
                                 {% if player.photo_filename %}
                                 <img src="{{ url_for('static', filename='uploads/player_photos/' + player.photo_filename) }}" 
                                      alt="{{ player.name }}" class="img-fluid rounded mb-2" style="max-height: 100px;">
+                                {% else %}
+                                <div class="bg-light rounded mb-2 d-flex align-items-center justify-content-center" style="height: 100px;">
+                                    <i class="bi bi-person-circle" style="font-size: 60px; color: #ccc;"></i>
+                                </div>
                                 {% endif %}
-                                <h6>{{ player.name }}</h6>
-                                <p class="mb-1">
+                                <h6 class="mb-2">{{ player.name }}</h6>
+                                <p class="mb-2">
                                     <span class="badge bg-primary">{{ player.batch }}</span>
                                     <span class="badge bg-success">{{ player.position }}</span>
                                 </p>
+                                <p class="mb-2 small text-muted">Base: ৳{{ "%.2f"|format(player.base_price) }}</p>
                                 <button class="btn btn-sm btn-primary select-player-btn" data-player-id="{{ player.id }}">
-                                    Select
+                                    <i class="bi bi-check-circle"></i> Select
                                 </button>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+                
+                <!-- No Results Message -->
+                <div id="noResults" class="text-center py-5" style="display: none;">
+                    <i class="bi bi-search" style="font-size: 48px; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No players found matching your search criteria</p>
                 </div>
             </div>
         </div>
@@ -507,6 +565,113 @@
                 selectPlayer(playerId);
             });
         });
+
+        // Search and Filter functionality for player modal
+        const playerSearch = document.getElementById('playerSearch');
+        const filterBatch = document.getElementById('filterBatch');
+        const filterPosition = document.getElementById('filterPosition');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const playersGrid = document.getElementById('playersGrid');
+        const noResults = document.getElementById('noResults');
+        const playerCount = document.getElementById('playerCount');
+
+        function filterPlayers() {
+            const searchTerm = playerSearch ? playerSearch.value.toLowerCase().trim() : '';
+            const selectedBatch = filterBatch ? filterBatch.value : '';
+            const selectedPosition = filterPosition ? filterPosition.value : '';
+            
+            const playerCards = document.querySelectorAll('.player-card');
+            let visibleCount = 0;
+            
+            playerCards.forEach(card => {
+                const playerName = card.getAttribute('data-player-name') || '';
+                const playerBatch = card.getAttribute('data-player-batch') || '';
+                const playerPosition = card.getAttribute('data-player-position') || '';
+                
+                // Check search term
+                const matchesSearch = !searchTerm || playerName.includes(searchTerm);
+                
+                // Check batch filter
+                const matchesBatch = !selectedBatch || playerBatch === selectedBatch;
+                
+                // Check position filter
+                const matchesPosition = !selectedPosition || playerPosition === selectedPosition;
+                
+                // Show/hide card based on filters
+                if (matchesSearch && matchesBatch && matchesPosition) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show/hide no results message
+            if (playersGrid && noResults) {
+                if (visibleCount === 0) {
+                    playersGrid.style.display = 'none';
+                    noResults.style.display = 'block';
+                } else {
+                    playersGrid.style.display = '';
+                    noResults.style.display = 'none';
+                }
+            }
+            
+            // Update player count
+            if (playerCount) {
+                playerCount.textContent = `${visibleCount} player${visibleCount !== 1 ? 's' : ''} found`;
+            }
+        }
+
+        // Add event listeners for search and filters
+        if (playerSearch) {
+            playerSearch.addEventListener('input', filterPlayers);
+        }
+        if (filterBatch) {
+            filterBatch.addEventListener('change', filterPlayers);
+        }
+        if (filterPosition) {
+            filterPosition.addEventListener('change', filterPlayers);
+        }
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', function() {
+                if (playerSearch) playerSearch.value = '';
+                if (filterBatch) filterBatch.value = '';
+                if (filterPosition) filterPosition.value = '';
+                filterPlayers();
+            });
+        }
+
+        // Reset filters when modal is opened
+        const selectPlayerModal = document.getElementById('selectPlayerModal');
+        if (selectPlayerModal) {
+            selectPlayerModal.addEventListener('show.bs.modal', function() {
+                // Reset all filters
+                if (playerSearch) playerSearch.value = '';
+                if (filterBatch) filterBatch.value = '';
+                if (filterPosition) filterPosition.value = '';
+                
+                // Show all players
+                const playerCards = document.querySelectorAll('.player-card');
+                playerCards.forEach(card => {
+                    card.style.display = '';
+                });
+                
+                // Update count
+                if (playerCount) {
+                    playerCount.textContent = `${playerCards.length} player${playerCards.length !== 1 ? 's' : ''} available`;
+                }
+                
+                // Hide no results message
+                if (noResults) noResults.style.display = 'none';
+                if (playersGrid) playersGrid.style.display = '';
+                
+                // Focus on search input
+                if (playerSearch) {
+                    setTimeout(() => playerSearch.focus(), 300);
+                }
+            });
+        }
 
         // Place Bid Form
         const placeBidForm = document.getElementById('placeBidForm');
